@@ -1,6 +1,5 @@
-use crate::kilobot::Kilobot;
-
 mod kilobot;
+mod board;
 
 fn main() {
 
