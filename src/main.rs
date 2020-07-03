@@ -2,9 +2,6 @@ mod kilobot;
 mod board;
 
 fn main() {
-
-    println!("Hello, world!");
-
     let bot_radius = 5;
     let mut new_bot = kilobot::new_kilobot(0,bot_radius);
     test_bot(&mut new_bot);
