@@ -76,6 +76,12 @@ impl Kilobot
         (self.left_motor, self.right_motor)
     }
 
+    //Return the uid of the bot
+    pub fn get_uid(&self) -> u32
+    {
+        self.uid
+    }
+
 }
 
 impl fmt::Display for Kilobot

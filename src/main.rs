@@ -22,9 +22,9 @@ fn test_bot(bot: &mut kilobot::Kilobot)
 
 fn test_board(board: &mut board::Board)
 {
-    board.add_bot((kilobot::new_kilobot(1,1)),0,0);
-    board.add_bot((kilobot::new_kilobot(1,1)),0,0);
-    board.add_bot((kilobot::new_kilobot(1,1)),2,2);
+    board.add_bot(kilobot::new_kilobot(1,1),0,0, 0);
+    board.add_bot(kilobot::new_kilobot(2,1),0,0, 0);
+    board.add_bot(kilobot::new_kilobot(3,1),2,2, 0);
     println!("Board: {}", board);
     board.print_board();
 }
