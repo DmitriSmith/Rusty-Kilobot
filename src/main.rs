@@ -55,22 +55,11 @@ fn test_board(board: &mut board::Board)
 
 fn test_board_controller(board_controller: &mut board_controller::BoardController)
 {
-    board_controller.board.add_new_bot_at_coord(kilobot::new_kilobot(1, 1), CoordinatePair{x: 0, y: 0}, 0);
-    board_controller.board.add_new_bot_at_coord(kilobot::new_kilobot(2, 1), CoordinatePair{x: 0, y: 0}, 0);
-    board_controller.board.add_new_bot_at_coord(kilobot::new_kilobot(3, 1), CoordinatePair{x: 2, y: 2}, 0);
-    board_controller.board.remove_bot_location_at_coord(CoordinatePair{x: 0, y: 0},);
-    println!("Board: {}", board_controller.board);
-    board_controller.board.print_board();
-    board_controller.board.remove_bot_location_at_coord(CoordinatePair{x: 2, y: 2},);
-    println!("Board: {}", board_controller.board);
-    board_controller.board.print_board();
-    board_controller.board.add_new_bot_at_coord(kilobot::new_kilobot(1, 1), CoordinatePair{x: 1, y: 1}, 0);
-    println!("Board: {}", board_controller.board);
-    board_controller.board.print_board();
+    test_board(&mut board_controller.board);
     board_controller.move_bot_by_coord(CoordinatePair{x: 1, y: 1},CoordinatePair{x: 0, y: 0});
     println!("Board: {}", board_controller.board);
     board_controller.board.print_board();
-    board_controller.board.add_new_bot_at_coord(kilobot::new_kilobot(3, 1), CoordinatePair{x: 2, y: 2}, 0);
+    board_controller.board.add_new_bot_at_coord(kilobot::new_kilobot(3, 1), CoordinatePair{x: 2, y: 2}, 180);
     board_controller.move_bot_by_index(0,4);
     board_controller.move_bot_by_coord(CoordinatePair{x: 2, y: 2},CoordinatePair{x: 3, y: 2});
     board_controller.move_bot_by_index(13,18);
@@ -80,6 +69,9 @@ fn test_board_controller(board_controller: &mut board_controller::BoardControlle
     board_controller.board.add_new_bot_at_coord(kilobot::new_kilobot(4, 1), CoordinatePair{x:1, y:1}, 135);
     board_controller.move_bot_forward(6);
     board_controller.move_bot_forward(18);
+    println!("Board: {}", board_controller.board);
+    board_controller.board.print_board();
+    board_controller.move_bot_forward(23);
     println!("Board: {}", board_controller.board);
     board_controller.board.print_board();
 

@@ -4,7 +4,7 @@ mod led_t;
 
 pub const MOTOR_MAX_VAL: u8 = 255;
 /// Speed that the bot rotates at in degrees/sec
-pub const ROTATION_SPEED: u16 = 90;
+pub const ROTATION_SPEED: u16 = 45;
 
 //Struct representing the kilobot
 /*

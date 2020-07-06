@@ -88,16 +88,17 @@ impl BoardController
                         {
                             if dest_y >= 0 && dest_y < self.board.get_height() as i8
                             {
-                                let dest = CoordinatePair{ x: dest_x as u8, y: dest_y as u8 };
-                                self.move_bot_by_coord(src, dest)?;
+                                let dest = CoordinatePair { x: dest_x as u8, y: dest_y as u8 };
+                                //This shouldn't call for a match, but the compiler freaked out if I just returned self.move_bot_by_coord
+                                return match self.move_bot_by_coord(src, dest)
+                                {
+                                    Some(e) => Some(e),
+                                    None => None
+                                }
 
-                            } else {
-                                Some(LocationError::OutOfBounds);
                             }
-                        } else {
-                            Some(LocationError::OutOfBounds);
                         }
-                        unimplemented!()
+                        Some(LocationError::OutOfBounds)
 
                     },
                     Err(e) => Some(e)
