@@ -1,4 +1,4 @@
-use crate::board::{Board, LocationError};
+use crate::board::{Board, LocationError, BotLocation, CoordinatePair};
 
 pub struct BoardController
 {
@@ -10,18 +10,16 @@ impl BoardController
     /// Moves a BotLocation to a new index on the board
     /// Specifically, gets indices of src and dest and calls move_bot_by_index
     /// # Arguments
-    /// * 'src_X' - X coordinate of BotLocation to be moved
-    /// * 'src_Y' - X coordinate of BotLocation to be moved
-    /// * 'dest_X' - Y coordinate to move BotLocation to
-    /// * 'dest_Y' - Y coordinate to move BotLocation to
+    /// * 'src_coord' - Coordinates of source BotLocation
+    /// * 'dest_coords' - Coordinates to move BotLocation to
     /// # Returns
     /// * Option<LocationError> if either coordinate is out of bounds, or if there is no BotLocation
     /// in the source, or if the destination already has a bot
-    pub fn move_bot_by_coord(&mut self, src_x: u8, src_y: u8, dest_x: u8, dest_y: u8) -> Option<LocationError>
+    pub fn move_bot_by_coord(&mut self, src_coords: CoordinatePair, dest_coords: CoordinatePair) -> Option<LocationError>
     {
-        match self.board.get_index_from_coord(src_x, src_y)
+        match self.board.get_index_from_coord(src_coords)
         {
-            Ok(src) => match self.board.get_index_from_coord(dest_x, dest_y)
+            Ok(src) => match self.board.get_index_from_coord(dest_coords)
             {
                 Ok(dest) => self.move_bot_by_index(src, dest),
                 Err(e) => Some(e)
@@ -64,5 +62,63 @@ impl BoardController
         } else {
             Some(LocationError::OutOfBounds)
         }
+    }
+
+    //TODO: Figure out why it woun't let me use most of my nested error propagation
+    /// Moves the bot forward relative to its current facing
+    /// # Arguments
+    /// 'index' - Array index of the bot to be moved
+    /// # Returns
+    /// * Option<LocationError> if the index is out of bounds or doesn't have a bot, or if the
+    /// destination is out of bounds or already has a bot
+    pub fn move_bot_forward(&mut self, index: usize) -> Option<LocationError>
+    {
+        match self.board.get_coord_from_index(index)
+        {
+            Ok(src) => {
+                match self.board.get_bot_location_at_index(index)
+                {
+                    Ok(bot) => {
+                        let delta = BoardController::get_forward_coord_delta(bot.get_facing() as f64);
+
+                        //Check bounds of board
+                        let dest_x = (src.x as i8) + delta.0;
+                        let dest_y = (src.y as i8) + delta.1;
+                        if dest_x >= 0 && dest_x < self.board.get_width() as i8
+                        {
+                            if dest_y >= 0 && dest_y < self.board.get_height() as i8
+                            {
+                                let dest = CoordinatePair{ x: dest_x as u8, y: dest_y as u8 };
+                                self.move_bot_by_coord(src, dest)?;
+
+                            } else {
+                                Some(LocationError::OutOfBounds);
+                            }
+                        } else {
+                            Some(LocationError::OutOfBounds);
+                        }
+                        unimplemented!()
+
+                    },
+                    Err(e) => Some(e)
+                }
+            },
+            Err(e) => Some(e)
+        }
+
+    }
+
+    /// Gets the change in coordinates for a bot moving forward
+    /// # Arguments
+    /// * 'facing' - the direction the bot is facing in degrees clockwise from north
+    /// # Returns
+    /// * (i8, i8) - The change in coordinates if the bot were to move forward.
+    /// Note that this is the change relative to the bot's current location,
+    /// *not* the final coordinates of the move
+    pub fn get_forward_coord_delta(facing: f64) -> (i8, i8)
+    {
+        let delta_x = facing.to_radians().sin().round() as i8;
+        let delta_y = -1 * facing.to_radians().cos().round() as i8;
+        (delta_x,delta_y)
     }
 }
