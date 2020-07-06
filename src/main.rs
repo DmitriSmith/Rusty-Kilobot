@@ -19,9 +19,16 @@ fn test_bot(bot: &mut kilobot::Kilobot)
 
 fn test_board(board: &mut board::Board)
 {
-    board.add_bot(kilobot::new_kilobot(1,1),0,0, 0);
-    board.add_bot(kilobot::new_kilobot(2,1),0,0, 0);
-    board.add_bot(kilobot::new_kilobot(3,1),2,2, 0);
+    board.add_bot_location(kilobot::new_kilobot(1,1),0,0, 0);
+    board.add_bot_location(kilobot::new_kilobot(2,1),0,0, 0);
+    board.add_bot_location(kilobot::new_kilobot(3,1),2,2, 0);
+    board.remove_bot_location_at_coord(0,0);
+    println!("Board: {}", board);
+    board.print_board();
+    board.remove_bot_location_at_coord(2,2);
+    println!("Board: {}", board);
+    board.print_board();
+    board.add_bot_location(kilobot::new_kilobot(1,1),1,1, 0);
     println!("Board: {}", board);
     board.print_board();
 }
