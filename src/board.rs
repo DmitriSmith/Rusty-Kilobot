@@ -16,12 +16,12 @@ pub struct Board
 {
     width: u8,
     height: u8,
-    bots: Vec<Option<BotLocation>>,         //2D array packed into a Vector
+    locations: Vec<Option<BotLocation>>,         //2D array packed into a Vector
 }
 
 impl Board
 {
-    /// Add new bot to the board
+    /// Add new bot to the board at the given coordinates
     /// # Arguments
     /// 'bot' - Kilobot to add to the board
     /// 'x' - X coordinate to place the bot
@@ -30,28 +30,57 @@ impl Board
     /// # Returns
     /// None - Insert successful
     /// LocationError if out of bounds or coordinates already occupied
-    pub fn add_bot_location(&mut self, bot: Kilobot, x: u8, y: u8, facing: u16) -> Option<LocationError>
+    pub fn add_new_bot_at_coord(&mut self, bot: Kilobot, x: u8, y: u8, facing: u16) -> Option<LocationError>
     {
-        if x < self.width && y < self.height
+        match self.get_index_from_coord(x, y)
         {
-            let desired_index: usize;
-            match self.get_index_from_coord(x, y)
-            {
-                Ok(index) => desired_index = index,
-                Err(e) => return Some(e),
+            Ok(index) => self.add_new_bot_at_index(bot, index, facing),
+            Err(e) => Some(e)
+        }
+    }
+
+    /// Add new bot to the board at the given index
+    /// # Arguments
+    /// 'bot' - Kilobot to add to the board
+    /// 'index' - Index in vector to place the bot
+    /// 'facing' - Direction the bot is initially facing, in degrees clockwise from north
+    /// # Returns
+    /// None - Insert successful
+    /// LocationError if out of bounds or coordinates already occupied
+    pub fn add_new_bot_at_index(&mut self, bot: Kilobot, index: usize, facing: u16) -> Option<LocationError>
+    {
+        match self.locations.get(index).unwrap().as_ref() {
+            Some(_) => Some(LocationError::AlreadyOccupied),
+            None => {
+                mem::swap(&mut self.locations[index], &mut Some(BotLocation { bot, facing }));
+                None
             }
+        }
+    }
 
-            let mut desired_position = self.bots.get_mut(desired_index).unwrap().as_ref();
+    pub fn add_bot_location_at_coord(&mut self, bot_loc: BotLocation, x: u8, y: u8) -> Option<LocationError>
+    {
+        match self.get_index_from_coord(x, y)
+        {
+            Ok(index) => self.add_bot_location_at_index(bot_loc, index),
+            Err(e) => Some(e)
+        }
+    }
 
-            match desired_position {
+    pub fn add_bot_location_at_index(&mut self, bot_loc: BotLocation, index: usize) -> Option<LocationError>
+    {
+        if index < self.locations.len()
+        {
+            match self.locations.get(index).unwrap().as_ref() {
                 Some(_) => Some(LocationError::AlreadyOccupied),
                 None => {
-                    mem::swap(&mut self.bots[desired_index], &mut Some(BotLocation { bot, facing }));
+                    mem::swap(&mut self.locations[index], &mut Some(bot_loc));
                     None
                 }
             }
+        } else {
+            Some(LocationError::OutOfBounds)
         }
-        else { Some(LocationError::OutOfBounds) }
     }
 
     /// Removes the BotLocation at the specified coordinates if a bot is present there and replaces it with None
@@ -60,8 +89,8 @@ impl Board
     /// * 'x' - X-coordinate of BotLocation
     /// * 'y' - Y-Coordinate of BotLocation
     /// # Returns
-    /// Ok - Box<BotLocation> Pointer to removed BotLocation
-    /// Err(LocationError) if coordinates are out of bounds or there is no bot in the coordinate
+    /// * Ok - Box<BotLocation> Pointer to removed BotLocation
+    /// * Err(LocationError) if coordinates are out of bounds or there is no bot in the coordinate
     pub fn remove_bot_location_at_coord(&mut self, x: u8, y: u8) -> Result<Box<BotLocation>,LocationError>
     {
             self.remove_bot_location_at_index(self.get_index_from_coord(x, y)?)
@@ -71,19 +100,17 @@ impl Board
     /// # Arguments
     /// * 'index' - Index of BotLocation to remove
     /// # Returns
-    /// Ok - Box<BotLocation> Pointer to removed BotLocation
-    /// Err(LocationError) if index is out of bounds or there is no bot in the coordinate
+    /// * Ok - Box<BotLocation> Pointer to removed BotLocation
+    /// * Err(LocationError) if index is out of bounds or there is no bot in the coordinate
     pub fn remove_bot_location_at_index(&mut self, index: usize) -> Result<Box<BotLocation>,LocationError>
     {
-        if index >= 0 && index < self.bots.len()
+        if index >= 0 && index < self.locations.len()
         {
-            match self.bots.get(index)
+            match self.locations.get(index)
             {
                 Some(b) => {
-                    let bot = mem::replace(&mut self.bots[index], None);
+                    let bot = mem::replace(&mut self.locations[index], None);
                     Ok(Box::new(bot.unwrap()))
-                    // bot = Box::new(self.bots);
-                    // Ok(Box::new(*bot))
                 },
                 None => Err(LocationError::NotOccupied),
             }
@@ -113,9 +140,9 @@ impl Board
     /// * Err - LocationError if no bot is found, or out of bounds
     pub fn get_bot_at_index(&self, index: usize) -> Result<&Kilobot, LocationError>
     {
-        if index < self.bots.len()
+        if index < self.locations.len()
         {
-            let this_location = self.bots.get(index).unwrap();
+            let this_location = self.locations.get(index).unwrap();
             match this_location
             {
                 Some(_) => Ok(this_location.as_ref().unwrap().bot()),
@@ -142,6 +169,43 @@ impl Board
 
     }
 
+    /// Get the length of the vector representing the board
+    /// # Returns
+    /// * u16 length of the board
+    pub fn len(&self) -> usize
+    {
+        self.locations.len()
+    }
+
+    /// Returns whether the given coordinate pair is occupied by a kilobot
+    /// Actually just finds the index of the coordinate pair then call index_is_occupied
+    /// # Arguments
+    /// * 'x' - X coordinate
+    /// * 'y' - Y coordinate
+    /// # Returns
+    /// * true if the location has a kilobot inside it
+    /// * LocationError if the coordinates are out of bounds
+    pub fn coord_is_occupied(&self, x: u8, y: u8) -> Result<bool, LocationError>
+    {
+        self.index_is_occupied(self.get_index_from_coord(x, y)?)
+    }
+
+    /// Returns whether the given index is occupied by a kilobot
+    /// # Arguments
+    /// * 'index' - Vector index to check
+    /// # Returns
+    /// * true if the location has a kilobot inside it
+    /// * LocationError if the index is out of bounds
+    pub fn index_is_occupied(&self, index: usize) -> Result<bool, LocationError>
+    {
+        if index < self.locations.len()
+        {
+            Ok(self.get_bot_at_index(index).is_ok())
+        }
+        else { Err(LocationError::OutOfBounds) }
+
+    }
+
     /// Print left to right, top to bottom
     pub fn print_board(&self)
     {
@@ -149,7 +213,7 @@ impl Board
         {
             for i in 0..self.width
             {
-                let this_space = self.bots.get(match self.get_index_from_coord(i, j) {
+                let this_space = self.locations.get(match self.get_index_from_coord(i, j) {
                     Ok(x) => x,
                     Err(_) => unimplemented!(),
                 }).unwrap();
@@ -219,10 +283,10 @@ impl BotLocation
 ///         where '*' represents "None"
 pub fn new_board(width: u8, height: u8) -> Board
 {
-    let mut board = Board {width, height, bots: Vec::with_capacity((width * height).into())};
+    let mut board = Board {width, height, locations: Vec::with_capacity((width * height).into())};
     for _i in 0..width * height
     {
-        board.bots.push(None);
+        board.locations.push(None);
     }
     return board;
 }
@@ -232,9 +296,9 @@ impl fmt::Display for Board
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
     {
         let mut num_bots: u16 = 0;
-        for index in 0..self.bots.len()
+        for index in 0..self.locations.len()
         {
-            if self.bots.get(index).unwrap().is_some()
+            if self.locations.get(index).unwrap().is_some()
             {
                 num_bots += 1;
             }
