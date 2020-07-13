@@ -1,6 +1,8 @@
 use std::fmt;
 
 mod led_t;
+mod transceiver;
+mod messages;
 
 pub const MOTOR_MAX_VAL: u8 = 255;
 /// Speed that the bot rotates at in degrees/sec
@@ -10,18 +12,17 @@ pub const ROTATION_SPEED: u16 = 45;
 /*
  * Kilobot is goverened by physical limitations
  * Motors are pwm, left & right motor values represent duty cycle of signal to motors
- * TODO: Move to separate module
  */
 pub struct Kilobot
 {
     left_motor: u8,
     right_motor: u8,
-    led: led_t::Led_t,
+    led: led_t::RGB,
     uid: u32,
     message_received: bool,
     radius: u16,
 }
-
+// TODO: Proper documentation comments
 impl Kilobot
 {
     /*

@@ -1,5 +1,8 @@
 use crate::board::{Board, LocationError, BotLocation, CoordinatePair};
 
+/// Object responsible for manipulating the board
+/// # Fields
+/// board - Board struct
 pub struct BoardController
 {
     pub(crate) board: Board,
@@ -64,7 +67,6 @@ impl BoardController
         }
     }
 
-    //TODO: Figure out why it woun't let me use most of my nested error propagation
     /// Moves the bot forward relative to its current facing
     /// # Arguments
     /// 'index' - Array index of the bot to be moved

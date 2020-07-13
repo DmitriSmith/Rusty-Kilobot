@@ -7,6 +7,8 @@ pub const EAST: u16 = 90;
 pub const SOUTH: u16 = 180;
 pub const WEST: u16 = 270;
 
+/// Basic error tpe that encompasses errors that can occur related to the board.
+/// Doesn't carry any sort of message
 pub enum LocationError {
     AlreadyOccupied,
     NotOccupied,
@@ -20,6 +22,12 @@ pub struct CoordinatePair
     pub(crate) y: u8,
 }
 
+/// Struct representing the field that Kilobots move on
+/// # Fields
+/// * 'width' - Width of the board
+/// * 'height' - Height of the board
+/// * 'locations' - Packed vector of Option<BotLocation> representing each space on the board, where
+///  any index that is not null has a bot, and any index that is null has no bot
 pub struct Board
 {
     width: u8,
@@ -301,6 +309,10 @@ impl Board
     }
 }
 
+/// Struct representing a space that a Kilobot occupies
+/// # Fields
+/// * 'bot' - Kilobot at this location
+/// * 'facing'
 pub struct BotLocation
 {
     bot: Kilobot,
