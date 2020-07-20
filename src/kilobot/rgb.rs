@@ -3,9 +3,9 @@ pub const LED_OFF: (u8, u8, u8) = (0, 0, 0);
 /// Struct representing the kilobot LED
 pub struct RGB
 {
-    r: u8,
-    g: u8,
-    b: u8,
+    pub r: u8,
+    pub g: u8,
+    pub b: u8,
 }
 
 impl RGB

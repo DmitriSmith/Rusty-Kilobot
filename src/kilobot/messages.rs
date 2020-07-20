@@ -45,12 +45,14 @@ enum MessageType
 /// A message that can be transmitted by the bot
 /// The message structure mimics that of the actual kilobot
 /// So each message is 12 bytes long, in three parts: the payload
-/// (9 bytes), the type (1 byte), and a CRC (2 bytes).
+/// (9 bytes), the type (1 byte), and a CRC (2 bytes). Kilobot documentation does not layout the
+/// structure of the payload, so for the moment it is as follows:
+/// (2) src_uid, (7) data, (1) type, (2) crc.
 pub struct Message
 {
     data: [u8; 9],
-    message_type: u8,
-    message_crc: u8,
+    msg_type: u8,
+    msg_crc: u8,
 }
 
 impl Message
@@ -58,10 +60,8 @@ impl Message
     /// (NOT IMPLEMENTED!) Generate a CRC for a message
     /// # Arguments
     /// * 'message' - CRC will be generated based on the data and type of this message
-    /// # Returns
-    /// * CRC generated for input 'message'
-    pub fn generate_crc(&mut message: &mut Message)
+    pub fn generate_crc(msg: &mut Message)
     {
-        !unimplemented!();
+        msg.msg_crc = 0x00;
     }
 }

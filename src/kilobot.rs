@@ -1,9 +1,9 @@
 use std::fmt;
 
-mod led_t;
+mod rgb;
 mod transceiver;
 mod messages;
-
+/// Max PWN frequency of the kilobot
 pub const MOTOR_MAX_VAL: u8 = 255;
 /// Speed that the bot rotates at in degrees/sec
 pub const ROTATION_SPEED: u16 = 45;
@@ -13,14 +13,18 @@ pub const ROTATION_SPEED: u16 = 45;
  * Kilobot is goverened by physical limitations
  * Motors are pwm, left & right motor values represent duty cycle of signal to motors
  */
+/// A kilobot - see "K-team kilobots" (https://www.k-team.com/mobile-robotics-products/kilobot)
 pub struct Kilobot
 {
     left_motor: u8,
     right_motor: u8,
-    led: led_t::RGB,
-    uid: u32,
+    led: rgb::RGB,
+    uid: u16,
     message_received: bool,
-    radius: u16,
+    //battery_voltage: u8,
+    //sensors: sensors::Sensors,
+    //setup: fn(),
+    //loop: fn(),
 }
 // TODO: Proper documentation comments
 impl Kilobot
@@ -70,7 +74,7 @@ impl Kilobot
     //Set the color of the LED
     pub fn set_led(&mut self, r: u8, g: u8, b: u8)
     {
-        self.led.set(r,g,b);
+        self.led.set(rgb::RGB{r,g,b});
     }
 
     //Returns the raw motor values formatted as (left_motor, right_motor)
@@ -80,7 +84,7 @@ impl Kilobot
     }
 
     //Return the uid of the bot
-    pub fn get_uid(&self) -> u32
+    pub fn get_uid(&self) -> u16
     {
         self.uid
     }
@@ -99,7 +103,7 @@ impl fmt::Display for Kilobot
 }
 
 //Create a new kilobot
-pub fn new_kilobot(uid: u32, radius: u16) -> Kilobot
+pub fn new_kilobot(uid: u16) -> Kilobot
 {
-    Kilobot {left_motor: 0, right_motor: 0, led: led_t::new_led(0,0,0), uid, message_received: false, radius}
+    Kilobot {left_motor: 0, right_motor: 0, led: rgb::new_led(0, 0, 0), uid, message_received: false}
 }
