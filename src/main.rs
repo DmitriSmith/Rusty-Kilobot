@@ -1,5 +1,5 @@
 use crate::board_controller::BoardController;
-use crate::board::CoordinatePair;
+use crate::board::{CoordinatePair, Board};
 
 mod board_controller;
 mod kilobot;
@@ -10,7 +10,7 @@ pub const PI :f64 = std::f64::consts::PI;
 fn main() {
     let mut new_bot = kilobot::new_kilobot(0);
     test_bot(&mut new_bot);
-    let mut new_board = board::new_board(5, 5);
+    let mut new_board = Board::new(5, 5);
     //test_board(&mut new_board);
     let mut new_board_controller = &mut BoardController{ board: new_board};
     test_board_controller(new_board_controller);

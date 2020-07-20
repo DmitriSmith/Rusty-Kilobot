@@ -1,11 +1,11 @@
-use crate::board::{Board, LocationError, BotLocation, CoordinatePair};
+use crate::board::{BotMap, LocationError, CoordinatePair};
 
 /// Object responsible for manipulating the board
 /// # Fields
 /// board - Board struct
 pub struct BoardController
 {
-    pub(crate) board: Board,
+    pub(crate) board: BotMap,
 }
 
 impl BoardController

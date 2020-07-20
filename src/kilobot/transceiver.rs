@@ -28,7 +28,7 @@ use crate::kilobot::messages::Message;
 /// object and the measured distance from the source
 /// # Notes
 /// * There is no 'ack' response, a message is transmitted only if there is no contention
-pub struct transceiver
+pub struct Transceiver
 {
     message_received: u8,
     message_tx: fn() -> Option<Message>,
@@ -37,7 +37,7 @@ pub struct transceiver
     message_rx_success: fn(),
 }
 
-impl transceiver
+impl Transceiver
 {
     /// Sets the callback function to be run when a message is ready to be transmitted
     /// # Arguments
