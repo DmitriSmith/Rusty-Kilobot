@@ -1,18 +1,25 @@
-use crate::kilobot::Kilobot;
+use crate::board::{CoordinatePair, LocationError};
+use crate::board::board_map::BoardMap;
 
 /// Map of all broadcasts and their range on the board
 pub struct SignalMap
 {
-    width: u8,
-    height: u8,
-    sources: Vec<Option<Signal>>, //2D array packed into a vector, meant to overlay a BotMap
+    width: usize,
+    height: usize,
+    sources: Vec<Option<SignalSource>>,   //A map of all signal sources on the board. Overlays a BotMap
+    signals: Vec<Signal>, //All spaces that have a readable signal, meant to overlay a BotMap
+}
+
+/// Represents a space on the board and stores all readable signals at that space
+pub struct Signal
+{
+    pub sources: Vec<SignalSource>,
 }
 
 /// Represents a signal source
-pub struct Signal
+pub struct SignalSource
 {
-    radius: u8,
-    source: Kilobot,
+    pub radius: u8,
 }
 
 impl SignalMap
@@ -27,13 +34,25 @@ impl SignalMap
     ///             * * * *
     ///             * * * *
     ///         where '*' represents "None"
-    pub fn new(width: u8, height: u8) -> SignalMap
+    pub fn new(width: usize, height: usize) -> SignalMap
     {
-        let mut new_map = SignalMap{width, height, sources: Vec::with_capacity((width * height).into())};
-        for _i in 0..width * height
+        let len = width * height;
+        let mut new_map = SignalMap{width, height, sources: Vec::with_capacity(len), signals: Vec::with_capacity(len)};
+        for _i in 0..len
         {
-            new_map.locations.push(None);
+            new_map.sources.push(None);
         }
         new_map
+    }
+}
+
+impl BoardMap for SignalMap
+{
+    fn get_width(&self) -> usize {
+        self.width
+    }
+
+    fn get_height(&self) -> usize {
+        self.height
     }
 }
