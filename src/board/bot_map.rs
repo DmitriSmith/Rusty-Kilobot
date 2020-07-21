@@ -49,7 +49,11 @@ impl BotMap
     /// LocationError if out of bounds or coordinates already occupied
     pub fn add_new_bot_at_index(&mut self, bot: Kilobot, index: usize, facing: u16) -> Option<LocationError>
     {
-        match self.bots.get(index).unwrap().as_ref() {
+        if index >= self.len()
+        {
+            Some(LocationError::OutOfBounds);
+        }
+        match self.bots[index] {
             Some(_) => Some(LocationError::AlreadyOccupied),
             None => {
                 mem::swap(&mut self.bots[index], &mut Some(BotLocation { bot, facing }));
