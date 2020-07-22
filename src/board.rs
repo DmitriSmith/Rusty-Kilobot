@@ -28,6 +28,21 @@ pub struct CoordinatePair
     pub(crate) y: usize,
 }
 
+impl CoordinatePair
+{
+    /// Return the Coordinate Pair as a tuple of usize
+    pub fn as_usize_tuple(&self) -> (usize, usize)
+    {
+        (self.x, self.y)
+    }
+
+    /// Return the CoordinatePair as a tuple of u8
+    pub fn as_u8_tuple(&self) -> (u8, u8)
+    {
+        (self.x as u8, self.y as u8)
+    }
+}
+
 pub struct Board
 {
     width: usize,

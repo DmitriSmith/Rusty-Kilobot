@@ -8,6 +8,7 @@
 use crate::board::{CoordinatePair, LocationError};
 use crate::board::board_map::BoardMap;
 use std::mem;
+use std::cmp::{max, min};
 
 /// Map of all broadcasts and their range on the board
 pub struct SignalMap
@@ -28,7 +29,8 @@ pub struct Signal
 /// Represents a signal source
 pub struct SignalSource
 {
-    pub radius: u8,
+    pub coord: CoordinatePair,
+    pub radius: f64,
 }
 
 impl SignalMap
@@ -54,25 +56,23 @@ impl SignalMap
         new_map
     }
 
-    /// Add a new signal source to the signal_map
+    /// Add a new signal source to the signal_map and fill the area that the signal reaches
     /// # Arguments
     /// * 'source' - New source to add to the board
-    /// * 'coord' - Coordinate new source is located at
+    /// * 'index' - Index of coordinate new source is located at
     /// # Returns
     /// LocationError if index is out of bounds or already occupied, or None if successful
-    pub fn add_new_source(&mut self, source: SignalSource, coord: CoordinatePair) -> Option<LocationError>
+    pub fn add_new_source(&mut self, source: SignalSource) -> Option<LocationError>
     {
-        let mut index: usize = 0;
-        match self.get_index_from_coord(coord)
+        match self.get_index_from_coord(&source.coord)
         {
-            Ok(i) => {
-                index = i;
+            Ok(index) => {
                 match self.sources[index]
                 {
                     Some(_) => Some(LocationError::AlreadyOccupied),
                     None => {
+                        self.fill_circle(&source, Signal::add_source);
                         mem::swap(&mut self.sources[index], &mut Some(source));
-
                         None
                     },
                 }
@@ -82,26 +82,66 @@ impl SignalMap
     }
 
     /// Remove a signal source from the signal map
-    pub fn remove_source_at_index(&mut self, index: usize) -> Result<SignalSource,LocationError>
+    /// # Arguments
+    /// * 'src' - SignalSource to be removed
+    /// # Returns
+    /// The signal source that was removed if successful, LocationError if unsuccessful
+    pub fn remove_source(&mut self, src: SignalSource) -> Result<SignalSource,LocationError>
     {
-        if index >= self.len()
+        match self.get_index_from_coord(&src.coord)
         {
-            return Err(LocationError::OutOfBounds);
-        }
-        match self.sources.get(index)
-        {
-            Some(_) => {
-                let src = mem::replace(&mut self.sources[index], None);
-                Ok(src.unwrap())
+            Ok(index) => {
+                match self.sources.get(index)
+                {
+                    Some(_) => {
+                        self.fill_circle(&src, Signal::remove_source);
+                        let source = mem::replace(&mut self.sources[index], None);
+                        Ok(source.unwrap())
+                    },
+                    None => Err(LocationError::NotOccupied),
+                }
             },
-            None => Err(LocationError::NotOccupied),
+            Err(e) => Err(e),
         }
+
     }
 
-    /// Remove all signals from a source. Builds a bounding box then checks it.
-    /// Taken from https://www.redblobgames.com/grids/circle-drawing/
-    pub fn remove_signals(&mut self, src_index: usize, src_signal: &SignalSource)
+    /// Move a source to a destination CoordinatePair.
+    /// !! Note that src must already be in a valid location on the SignalMap !!
+    /// # Arguments
+    /// * 'src' - SignalSource to move. Must already be in a valid location on the SignalMap
+    /// * 'dest' - Destination to try to move src to
+    /// # Returns
+    /// * None if the move was successful, LocationError if any snags were hit
+    pub fn move_source_to_coord(&mut self, src: SignalSource, dest: CoordinatePair) -> Option<LocationError>
     {
+        match self.get_index_from_coord(&src.coord)
+        {
+            Ok(_) => {
+                match self.get_index_from_coord(&dest)
+                {
+                    Ok(dest_index) => {
+                        match self.sources.get_mut(dest_index).unwrap()
+                        {
+                            Some(_x) => Some(LocationError::AlreadyOccupied),
+                            None => {
+                                match self.remove_source(src)
+                                {
+                                    Ok(mut removed_src) => {
+                                        removed_src.coord = dest;
+                                        self.add_new_source(removed_src);
+                                        None
+                                    },
+                                    Err(e) => Some(e),
+                                }
+                            }
+                        }
+                    },
+                    Err(e) => Some(e),
+                }
+            },
+            Err(e) => Some(e),
+        }
 
     }
 
@@ -113,23 +153,52 @@ impl SignalMap
     /// * 'radius' - radius of the circle
     /// # Returns
     /// True if target is within the circle, or false if outside or out of bounds
-    fn inside_circle(&self, center: usize, target: usize, radius: u8) -> bool
+    fn inside_circle(&self, center: &CoordinatePair, target: &CoordinatePair, radius: f64) -> bool
     {
-        match self.get_coord_from_index(center)
+        let dx = center.x - target.x;
+        let dy = center.y - target.y;
+        let distance_squared = dx*dx + dy*dy;
+        distance_squared <= radius as usize
+    }
+
+    /// Helper function to get the bounding box of a circle. !!Does not check if center is out of bounds!!
+    /// # Arguments
+    /// * 'center' - The coordinates of the center of the circle
+    /// * 'radius' - the radius of the circle
+    /// # Returns
+    /// (top, bottom, left, right) - The boundaries of the circle as tuple
+    fn get_bounding_box(&self, center: &CoordinatePair, radius: f64) -> (usize,usize,usize,usize)
+    {
+        let top: usize = max(0, (center.y as f64 - radius) as usize);
+        let bottom: usize = min(self.height, (center.y as f64 + radius) as usize);
+        let left: usize = max(0, (center.x as f64 - radius) as usize);
+        let right: usize = min(self.width, (center.x as f64 + radius) as usize);
+
+        (top, bottom, left, right)
+    }
+
+    /// Perform a function on each space inside a circle originating from SignalSource
+    /// # Arguments
+    /// * 'src' - SignalSource that is origin of circle
+    /// * 'func' - Function to use to modify each space inside the circle
+    fn fill_circle<F>(&mut self, src: &SignalSource, func: F) where F: Fn(&mut Signal, &SignalSource)
+    {
+        let center = CoordinatePair{ x: src.coord.x, y: src.coord.y };
+        let bounding_box = self.get_bounding_box(&center, src.radius);
+        for y in bounding_box.0..bounding_box.1
         {
-            Ok(c) => {
-                match self.get_coord_from_index(target)
+            for x in bounding_box.2..bounding_box.3
+            {
+                let target = CoordinatePair {x, y};
+                if self.inside_circle(&center, &target, src.radius)
                 {
-                    Ok(t) => {
-                        let dx = c.x - t.x;
-                        let dy = c.y - t.y;
-                        let distance_squared = dx*dx + dy*dy;
-                        distance_squared <= radius as usize
+                    match self.get_index_from_coord(&target)
+                    {
+                        Ok(i) => func(self.signals.get_mut(i).unwrap(), src),
+                        Err(_e) => continue,
                     }
-                    Err(e) => false,
                 }
-            },
-            Err(e) => false,
+            }
         }
     }
 }
@@ -149,42 +218,45 @@ impl SignalSource
 {
     /// Create a new SignalSource
     /// # Arguments
+    /// * 'index' - Array index of the signal source
     /// * 'radius' - Broadcast radius of the signal in board units
     /// # Returns
     /// New, initialized SignalSource object
-    pub fn new(&mut self, radius: u8) -> SignalSource
+    pub fn new(&mut self, coord: CoordinatePair, radius: f64) -> SignalSource
     {
-        SignalSource(radius)
+        SignalSource{ coord, radius }
+    }
+
+    pub fn get(&self) -> &SignalSource
+    {
+        self
+    }
+
+    pub fn get_mut(&mut self) -> &mut SignalSource
+    {
+        self
     }
 }
 
 impl Signal
 {
-    /// Return a reference to each of the sources broadcasting on this space
-    /// # Returns
-    /// Vector of all signal sources detectable at this point
-    pub fn get_sources(&self) -> &Vec<SignalSource>
-    {
-        self.sources.as_ref()
-    }
-
     /// Add a detectable signal source, sort, then remove any duplicates
     /// Sort is needed to ensure that deduping catches all duplicates
     /// # Arguments
     /// * 'src' - Coordinates of the source
-    pub fn add_source(&mut self, src: (u8, u8))
+    pub fn add_source(point: &mut Signal, src: &SignalSource)
     {
-        self.sources.push(src);
-        self.sources.sort_by_key(|k| (k.0, k.1));
-        self.sources.dedup();
+        point.sources.push(src.coord.as_u8_tuple());
+        point.sources.sort_by_key(|k| (k.0, k.1));
+        point.sources.dedup();
     }
 
     /// Removes the given signal source origin if present
     /// # Arguments
     /// * 'src' - Origin coordinates to remove
-    pub fn remove_source(&mut self, src: (u8, u8))
+    pub fn remove_source(point: &mut Signal, src: &SignalSource)
     {
-        self.sources.retain(|&x| x != src)
+        point.sources.retain(|&x| x != src.coord.as_u8_tuple())
     }
 
 }

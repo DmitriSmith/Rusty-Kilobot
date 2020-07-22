@@ -96,7 +96,7 @@ impl BotMap
         {
             match self.bots.get(index)
             {
-                Some(b) => {
+                Some(_b) => {
                     let bot = mem::replace(&mut self.bots[index], None);
                     Ok(Box::new(bot.unwrap()))
                 },
@@ -161,7 +161,7 @@ impl BotMap
         {
             for x in 0..self.width
             {
-                let this_space = self.bots.get(match self.get_index_from_coord(CoordinatePair{x,y}) {
+                let this_space = self.bots.get(match self.get_index_from_coord(&CoordinatePair{x,y}) {
                     Ok(index) => index,
                     Err(_) => unimplemented!(),     //Shouldn't be able to get here!
                 }).unwrap();

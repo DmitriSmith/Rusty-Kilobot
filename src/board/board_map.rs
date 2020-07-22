@@ -19,7 +19,7 @@ pub trait BoardMap
     /// # Returns
     /// * Ok - usize index of desired x & y coordinate
     /// * Err - LocationError if coordinates are out of bounds
-    fn get_index_from_coord(&self, coord: CoordinatePair) -> Result<usize, LocationError>
+    fn get_index_from_coord(&self, coord: &CoordinatePair) -> Result<usize, LocationError>
     {
         let width = self.get_width();
         if coord.x < width && coord.y < self.get_height()
@@ -36,10 +36,10 @@ pub trait BoardMap
     /// # Returns
     /// * Ok - Coordinate pair corresponding with index
     /// * LocationError if index is out of bounds
-    fn get_coord_from_index(&self, index: usize) -> Result<CoordinatePair, LocationError>
+    fn get_coord_from_index(&self, index: &usize) -> Result<CoordinatePair, LocationError>
     {
         let width = self.get_width();
-        if index < self.len()
+        if index < &self.len()
         {
             let x = index % width;
             let y = (index - x) / width;
