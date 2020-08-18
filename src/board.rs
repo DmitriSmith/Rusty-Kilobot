@@ -1,6 +1,6 @@
 pub(crate) mod board_map;
 pub mod bot_map;
-mod signal_map;
+pub(crate) mod signal_map;
 
 use std::fmt;
 use crate::board::bot_map::{BotMap, BotLocation};
@@ -30,6 +30,11 @@ pub struct CoordinatePair
 
 impl CoordinatePair
 {
+    /// Create a new CoordinatePair
+    pub fn new(x: usize, y: usize) -> CoordinatePair
+    {
+        CoordinatePair {x, y}
+    }
     /// Return the Coordinate Pair as a tuple of usize
     pub fn as_usize_tuple(&self) -> (usize, usize)
     {
@@ -40,6 +45,18 @@ impl CoordinatePair
     pub fn as_u8_tuple(&self) -> (u8, u8)
     {
         (self.x as u8, self.y as u8)
+    }
+
+    /// Return the CoordinatePair as a tuple of type f64
+    pub fn as_f64_tuple(&self) -> (f64, f64)
+    {
+        (self.x as f64, self.y as f64)
+    }
+
+    /// Clone the coordinate pair - just copies the x and y values
+    pub fn clone(&self) -> CoordinatePair
+    {
+        CoordinatePair::new(self.x, self.y)
     }
 }
 
@@ -140,41 +157,6 @@ impl Board
     pub fn index_has_bot(&self, index: usize) -> Result<bool, LocationError>
     {
         self.bot_map.index_is_occupied(index)
-    }
-
-    /// Get the array index from an x and y coordinate
-/// # Arguments
-/// * 'x' - X coordinate
-/// * 'y' - Y coordinate
-/// # Returns
-/// * Ok - usize index of desired x & y coordinate
-/// * Err - LocationError if coordinates are out of bounds
-    pub fn get_index_from_coord(&self, coord: CoordinatePair) -> Result<usize, LocationError>
-    {
-        if coord.x < self.width && coord.y < self.height
-        {
-            Ok((coord.x + (coord.y * self.width)) as usize)
-        }
-        else { Err(LocationError::OutOfBounds) }
-
-    }
-
-    /// Gets the x & y coordinates from an array index
-    /// # Arguments
-    /// * 'index' - The array index to convert
-    /// # Returns
-    /// * Ok - Coordinate pair corresponding with index
-    /// * LocationError if index is out of bounds
-    pub fn get_coord_from_index(&self, index: usize) -> Result<CoordinatePair, LocationError>
-    {
-        if index < self.len()
-        {
-            let x = index % self.width;
-            let y = (index - x) / self.width;
-            Ok(CoordinatePair{x,y})
-        } else {
-            Err(LocationError::OutOfBounds)
-        }
     }
 
 

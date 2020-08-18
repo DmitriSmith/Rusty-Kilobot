@@ -7,7 +7,7 @@
 
 use crate::board::{CoordinatePair, LocationError};
 use crate::board::board_map::BoardMap;
-use std::mem;
+use std::{mem, fmt};
 use std::cmp::{max, min};
 
 /// Map of all broadcasts and their range on the board
@@ -52,6 +52,7 @@ impl SignalMap
         for _i in 0..len
         {
             new_map.sources.push(None);
+            new_map.signals.push(Signal{ sources: vec![] });
         }
         new_map
     }
@@ -83,27 +84,66 @@ impl SignalMap
 
     /// Remove a signal source from the signal map
     /// # Arguments
-    /// * 'src' - SignalSource to be removed
+    /// * 'coord' - Coordinates of SignalSource to be removed
     /// # Returns
-    /// The signal source that was removed if successful, LocationError if unsuccessful
-    pub fn remove_source(&mut self, src: SignalSource) -> Result<SignalSource,LocationError>
+    /// The signal source that was removed if successful, LocationError if out of bounds or no source at coordinates
+    pub fn remove_source_at_coord(&mut self, coord: &CoordinatePair) -> Result<SignalSource,LocationError>
     {
-        match self.get_index_from_coord(&src.coord)
+        match self.get_index_from_coord(coord)
         {
             Ok(index) => {
                 match self.sources.get(index)
                 {
-                    Some(_) => {
+                    Some(_s) => {
+                        let mut src = mem::replace(&mut self.sources[index], None).unwrap();
                         self.fill_circle(&src, Signal::remove_source);
-                        let source = mem::replace(&mut self.sources[index], None);
-                        Ok(source.unwrap())
+                        Ok(src)
                     },
                     None => Err(LocationError::NotOccupied),
                 }
             },
             Err(e) => Err(e),
         }
+    }
 
+    /// Get a reference to the SignalSource at the provided coordinates
+    /// # Arguments
+    /// * 'coord' - Coordinate on SignalMap to get SignalSource from
+    /// # Returns
+    /// Reference to a SignalSource at the given coordinate, or LocationError if out of bounds or no source present
+    pub fn get_source_at_coord(&self, coord: &CoordinatePair) -> Result<&SignalSource,LocationError>
+    {
+        match self.get_index_from_coord(coord)
+        {
+            Ok(index) => {
+                match &self.sources[index]
+                {
+                    Some(src) => Ok(src),
+                    None => Err(LocationError::NotOccupied),
+                }
+            },
+            Err(e) => Err(e),
+        }
+    }
+
+    /// Get a mutable reference to the SignalSource at the provided coordinates
+    /// # Arguments
+    /// * 'coord' - Coordinate on SignalMap to get SignalSource from
+    /// # Returns
+    /// Mutable reference to a SignalSource at the given coordinate, or LocationError if out of bounds or no source present
+    pub fn get_mut_source_at_coord(&mut self, coord: &CoordinatePair) -> Result<&mut SignalSource,LocationError>
+    {
+        match self.get_index_from_coord(coord)
+        {
+            Ok(index) => {
+                match self.sources.get_mut(index).unwrap()
+                {
+                    Some(src) => Ok(src),
+                    None => Err(LocationError::NotOccupied),
+                }
+            },
+            Err(e) => Err(e),
+        }
     }
 
     /// Move a source to a destination CoordinatePair.
@@ -113,9 +153,9 @@ impl SignalMap
     /// * 'dest' - Destination to try to move src to
     /// # Returns
     /// * None if the move was successful, LocationError if any snags were hit
-    pub fn move_source_to_coord(&mut self, src: SignalSource, dest: CoordinatePair) -> Option<LocationError>
+    pub fn move_source_to_coord(&mut self, src: &CoordinatePair, dest: &CoordinatePair) -> Option<LocationError>
     {
-        match self.get_index_from_coord(&src.coord)
+        match self.get_index_from_coord(&src)
         {
             Ok(_) => {
                 match self.get_index_from_coord(&dest)
@@ -125,10 +165,10 @@ impl SignalMap
                         {
                             Some(_x) => Some(LocationError::AlreadyOccupied),
                             None => {
-                                match self.remove_source(src)
+                                match self.remove_source_at_coord(src)
                                 {
                                     Ok(mut removed_src) => {
-                                        removed_src.coord = dest;
+                                        removed_src.coord = dest.clone();
                                         self.add_new_source(removed_src);
                                         None
                                     },
@@ -153,12 +193,14 @@ impl SignalMap
     /// * 'radius' - radius of the circle
     /// # Returns
     /// True if target is within the circle, or false if outside or out of bounds
-    fn inside_circle(&self, center: &CoordinatePair, target: &CoordinatePair, radius: f64) -> bool
+    fn inside_circle(center: &CoordinatePair, target: &CoordinatePair, radius: f64) -> bool
     {
-        let dx = center.x - target.x;
-        let dy = center.y - target.y;
+        let c = center.as_f64_tuple();
+        let t = target.as_f64_tuple();
+        let dx = c.0 - t.0;
+        let dy = c.1 - t.1;
         let distance_squared = dx*dx + dy*dy;
-        distance_squared <= radius as usize
+        distance_squared <= radius*radius
     }
 
     /// Helper function to get the bounding box of a circle. !!Does not check if center is out of bounds!!
@@ -169,10 +211,10 @@ impl SignalMap
     /// (top, bottom, left, right) - The boundaries of the circle as tuple
     fn get_bounding_box(&self, center: &CoordinatePair, radius: f64) -> (usize,usize,usize,usize)
     {
-        let top: usize = max(0, (center.y as f64 - radius) as usize);
-        let bottom: usize = min(self.height, (center.y as f64 + radius) as usize);
-        let left: usize = max(0, (center.x as f64 - radius) as usize);
-        let right: usize = min(self.width, (center.x as f64 + radius) as usize);
+        let top: usize = min(0, (center.y as f64 - radius) as usize);
+        let bottom: usize = max(self.height, (center.y as f64 + radius) as usize);
+        let left: usize = min(0, (center.x as f64 - radius) as usize);
+        let right: usize = max(self.width, (center.x as f64 + radius) as usize);
 
         (top, bottom, left, right)
     }
@@ -183,14 +225,14 @@ impl SignalMap
     /// * 'func' - Function to use to modify each space inside the circle
     fn fill_circle<F>(&mut self, src: &SignalSource, func: F) where F: Fn(&mut Signal, &SignalSource)
     {
-        let center = CoordinatePair{ x: src.coord.x, y: src.coord.y };
+        let center = CoordinatePair::new(src.coord.x,src.coord.y);
         let bounding_box = self.get_bounding_box(&center, src.radius);
         for y in bounding_box.0..bounding_box.1
         {
             for x in bounding_box.2..bounding_box.3
             {
                 let target = CoordinatePair {x, y};
-                if self.inside_circle(&center, &target, src.radius)
+                if SignalMap::inside_circle(&center, &target, src.radius)
                 {
                     match self.get_index_from_coord(&target)
                     {
@@ -198,6 +240,30 @@ impl SignalMap
                         Err(_e) => continue,
                     }
                 }
+            }
+        }
+    }
+
+    pub fn print_signal_map_to_console(&self)
+    {
+        for index in 0..self.len()
+        {
+            let mut txt: String;
+            if self.sources[index].is_some()
+            {
+                txt = "O".parse().unwrap();
+            } else if self.signals[index].sources.len() > 0
+            {
+                txt = "#".parse().unwrap();
+            } else {
+                txt = "~".parse().unwrap();
+            }
+            if index % self.width == self.width - 1
+            {
+                txt = format!("{}{}", txt, "\n");
+                print!("{}", txt);
+            } else {
+                print!("{} ", txt);
             }
         }
     }
@@ -222,7 +288,7 @@ impl SignalSource
     /// * 'radius' - Broadcast radius of the signal in board units
     /// # Returns
     /// New, initialized SignalSource object
-    pub fn new(&mut self, coord: CoordinatePair, radius: f64) -> SignalSource
+    pub fn new(coord: CoordinatePair, radius: f64) -> SignalSource
     {
         SignalSource{ coord, radius }
     }
@@ -259,4 +325,23 @@ impl Signal
         point.sources.retain(|&x| x != src.coord.as_u8_tuple())
     }
 
+}
+
+impl fmt::Display for SignalMap
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result
+    {
+        let mut num_srcs: u16 = 0;
+        for index in 0..self.len()
+        {
+            if self.sources[index].is_some()
+            {
+                num_srcs += 1;
+            }
+        }
+        write!(f, "(width:{}, height:{}, number of srcs:{})"
+               , self.width
+               , self.height
+               , num_srcs)
+    }
 }

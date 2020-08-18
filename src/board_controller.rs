@@ -55,7 +55,7 @@ impl BoardController
     /// destination is out of bounds or already has a bot
     pub fn move_bot_forward(&mut self, src: usize) -> Option<LocationError>
     {
-        match self.board.get_coord_from_index(src)
+        match self.board.get_coord_from_index(&src)
         {
             Ok(src_coord) => {
                 match self.board.get_bot_location_at_index(src)
@@ -70,7 +70,7 @@ impl BoardController
                         {
                             if dest_y >= 0 && dest_y < self.board.get_height() as i8
                             {
-                                let dest = self.board.get_index_from_coord(CoordinatePair { x: dest_x as usize, y: dest_y as usize }).ok().unwrap();
+                                let dest = self.board.get_index_from_coord(&CoordinatePair { x: dest_x as usize, y: dest_y as usize }).ok().unwrap();
                                 //This shouldn't call for a match, but the compiler freaked out if I just returned self.move_bot_by_coord
                                 return match self.move_bot_by_index(src, dest)
                                 {

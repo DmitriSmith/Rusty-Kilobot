@@ -92,7 +92,7 @@ impl BotMap
     /// * Err(LocationError) if index is out of bounds or there is no bot in the coordinate
     pub fn remove_bot_location_at_index(&mut self, index: usize) -> Result<Box<BotLocation>,LocationError>
     {
-        if index >= 0 && index < self.bots.len()
+        if index < self.bots.len()
         {
             match self.bots.get(index)
             {

@@ -1,5 +1,6 @@
 use crate::board_controller::BoardController;
-use crate::board::{Board, bot_map};
+use crate::board::{Board, bot_map, signal_map, CoordinatePair};
+use crate::board::signal_map::SignalSource;
 
 mod board_controller;
 mod kilobot;
@@ -10,11 +11,14 @@ pub const PI :f64 = std::f64::consts::PI;
 fn main() {
     let mut new_bot = kilobot::new_kilobot(0);
     test_bot(&mut new_bot);
-    let new_board = Board::new(5, 5);
+    //let new_board = Board::new(5, 5);
     //test_board(&mut new_board);
-    let new_board_controller = &mut BoardController{ board: new_board};
-    test_board_controller(new_board_controller);
+    //let new_board_controller = &mut BoardController{ board: new_board};
+    //test_board_controller(new_board_controller);
     //test_math();
+    let mut sig_map = signal_map::SignalMap::new(5,5);
+    test_signal_map(&mut sig_map);
+
 }
 
 fn test_math()
@@ -73,6 +77,22 @@ fn test_board_controller(board_controller: &mut board_controller::BoardControlle
     board_controller.move_bot_forward(23);
     println!("Board: {}", board_controller.board);
     board_controller.board.bot_map.print_board();
+
+}
+
+fn test_signal_map(sig_map: &mut signal_map::SignalMap)
+{
+    println!("{}", sig_map);
+    let mut new_src = SignalSource::new(CoordinatePair::new(0,1),1.5);
+    sig_map.add_new_source(new_src);
+    sig_map.remove_source_at_coord(&CoordinatePair::new(0,1));
+    new_src = SignalSource::new(CoordinatePair::new(2,2),2.0);
+    sig_map.add_new_source(new_src);
+    sig_map.print_signal_map_to_console();
+    let c = sig_map.get_source_at_coord(&CoordinatePair::new(2,2)).ok().unwrap().coord.clone();
+    sig_map.move_source_to_coord(&c, &CoordinatePair::new(3,3));
+    println!("{}", sig_map);
+    sig_map.print_signal_map_to_console();
 
 }
 
