@@ -185,6 +185,31 @@ impl SignalMap
 
     }
 
+    /// Get the signals detectable at the given coordinate
+    /// # Arguments
+    /// * 'coord' - CoordinatePair to check
+    /// # Returns
+    /// Immutable reference to a Signal object, or None if the coordinate is out of bounds.
+    /// The Signal object's sources vector will be empty if no signals are present at that coordinate
+    /// Changing the signals at a point is handled internally, so if a mutable object is needed
+    /// cloning is the appropriate way to get one
+    pub fn get_signals_at_coord(&self, coord: &CoordinatePair) -> Result<&Signal, LocationError>
+    {
+        match self.get_index_from_coord(coord)
+        {
+            Ok(i) =>
+                {
+                    // Doing this because it's late and I don't want to figure out how to implement the From trait
+                    match self.signals.get(i)
+                    {
+                        Some(sig) => Ok(sig),
+                        None => Err(LocationError::NotOccupied),
+                    }
+                },
+            Err(e) => Err(e),
+        }
+    }
+
     /// Helper function to determine whether a square is within a circle
     /// https://www.redblobgames.com/grids/circle-drawing/
     /// # Arguments
@@ -244,6 +269,8 @@ impl SignalMap
         }
     }
 
+    /// Print the signal map to console. Meant for debugging and development use only.
+    /// TODO: Remove/comment out when better solution implemented
     pub fn print_signal_map_to_console(&self)
     {
         for index in 0..self.len()
@@ -323,6 +350,17 @@ impl Signal
     pub fn remove_source(point: &mut Signal, src: &SignalSource)
     {
         point.sources.retain(|&x| x != src.coord.as_u8_tuple())
+    }
+
+    /// Clone a source Signal object
+    pub fn clone(src: &Signal) -> Signal
+    {
+        let mut new_sig = Signal{ sources: vec![] };
+        for i in 0..src.sources.len()
+        {
+            new_sig.sources.push(src.sources[i]);
+        }
+        new_sig
     }
 
 }

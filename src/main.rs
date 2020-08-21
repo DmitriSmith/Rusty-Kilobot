@@ -1,7 +1,9 @@
+
 use crate::board_controller::BoardController;
 use crate::board::{Board, bot_map, signal_map, CoordinatePair};
 use crate::board::signal_map::SignalSource;
 
+mod hal;
 mod board_controller;
 mod kilobot;
 mod board;

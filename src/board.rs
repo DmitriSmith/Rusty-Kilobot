@@ -159,6 +159,8 @@ impl Board
         self.bot_map.index_is_occupied(index)
     }
 
+    //pub fn get_signals_at_index(&self, index: usize) -> Result<Vec<Signal>>
+
 
 }
 
